@@ -1,6 +1,6 @@
 # Práctica 2: Despliegue de aplicaciones usando Kubernetes/Docker
-## Sistemas Distribuidos - Curso 2024/2025
-## Alejandro Mamán López-Mingo
+## Sistemas Distribuidos - Curso 2024/2025 - Programacion de Sistemas Distribuidos
+## Alejandro Mamán López-Mingo 
 ---
 
 ## 📋 Índice
