@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: kubernetes-bootcamp-ej1
+ namespace: default
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+   app: bootcamp
+ template:
+  metadata:
+   labels:
+    app: bootcamp
+  spec:
+   containers:
+   - name: kubernetes-bootcamp
+     image: docker.io/jocatalin/kubernetes-bootcamp:v2    
+     volumeMounts:
+     - mountPath: /prueba
+       name: directorio-prueba
+   volumes:
+   - name: directorio-prueba
+     hostPath:
+      path: /home/ubuntu/compartido
+      type: Directory
+

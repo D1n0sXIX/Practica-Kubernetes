@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment # Despliegue del servidor
+metadata:
+ name: server-deployment # Nombre del despliegue
+ namespace: default
+spec:
+ replicas: 1
+ selector:
+  matchLabels:
+   app: server-deploy # Etiqueta para el despliegue
+ template:
+  metadata:
+   labels:
+    app: server-deploy # Etiqueta para los pods
+  spec:
+   nodeSelector:
+    node-role: server
+   containers:
+   - name: server-deployment # Nombre del contenedor
+     image: docker.io/d1n0s/kubernetes-practica2server:v2 # Imagen del contenedor
+     ports:
+     - containerPort: 32001 # Puerto del contenedor

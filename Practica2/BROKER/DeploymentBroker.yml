@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment # Despliegue del broker file manager
+metadata:
+ name: broker-deployment # Nombre del despliegue
+ namespace: default
+spec:
+ replicas: 1
+ selector:
+  matchLabels:
+   app: brokerfilemanager
+ template:
+  metadata:
+   labels:
+    app: brokerfilemanager
+  spec:
+   nodeSelector:
+    node-role: broker
+   containers:
+   - name: broker-deployment # Nombre del contenedor
+     image: docker.io/d1n0s/kubernetes-practica2broker:v1 # Imagen del contenedor
+     ports:
+     - containerPort: 32002
