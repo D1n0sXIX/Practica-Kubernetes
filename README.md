@@ -1,6 +1,6 @@
 # Práctica 2: Despliegue de aplicaciones usando Kubernetes/Docker
-## Sistemas Distribuidos - Curso 2024/2025
-## Alejandro Mamán López-Mingo
+## Sistemas Distribuidos - Curso 2024/2025 - Programacion de Sistemas Distribuidos
+## Alejandro Mamán López-Mingo 
 ---
 
 ## 📋 Índice
@@ -638,9 +638,3 @@ kubectl describe pvc <nombre-pvc>
 - [ ] Config 2: Múltiples nodos con NFS
 
 ---
-
-## 👨‍💻 Autor
-
-Alumno: [Tu Nombre]
-Asignatura: Sistemas Distribuidos
-Curso: 2024/2025
