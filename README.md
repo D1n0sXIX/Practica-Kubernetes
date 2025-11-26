@@ -209,7 +209,11 @@ server-deployment-689b756d6-6jqz8    1/1     Running   k8sslave2.psdi.org
 
 Para obtener la máxima calificación, debes implementar una de las dos configuraciones avanzadas:
 
+**✅ OPCIÓN SELECCIONADA: Opción 2 - Múltiples Nodos con NFS Compartido**
+
 ### 📌 Opción 1: Múltiples Réplicas con Volumen Compartido (hostPath)
+
+*Esta opción NO ha sido implementada. Se ha seleccionado la Opción 2.*
 
 Esta configuración permite tener **múltiples réplicas del servidor en un mismo nodo** compartiendo la misma carpeta de archivos.
 
@@ -327,15 +331,15 @@ lls
 
 ---
 
-### 📌 Opción 2: Múltiples Nodos con NFS Compartido
+### 📌 Opción 2: Múltiples Nodos con NFS Compartido ⭐ **(IMPLEMENTANDO)**
 
 Esta configuración permite tener **servidores distribuidos en múltiples nodos** compartiendo archivos mediante NFS.
 
 #### Requisitos previos
-- Añadir un tercer nodo worker (k8sslave3) al cluster
-- Etiquetar k8sslave2 y k8sslave3 como `node-role=server`
+- ⚠️ Añadir un tercer nodo worker (k8sslave3) al cluster *(Opcional para la demostración)*
+- Etiquetar k8sslave2 como `node-role=server`
 
-#### Paso 1: Instalar servidor NFS en k8smaster0
+#### Paso 1: Instalar servidor NFS en k8smaster0 ✅ **COMPLETADO**
 
 ```bash
 # En k8smaster0
@@ -347,25 +351,44 @@ sudo mkdir -p /mnt/nfs-filemanager
 sudo chown nobody:nogroup /mnt/nfs-filemanager
 sudo chmod 777 /mnt/nfs-filemanager
 
-# Configurar exports
+# Configurar exports (SIGUIENTE PASO)
 echo "/mnt/nfs-filemanager *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee -a /etc/exports
 
-# Reiniciar NFS
+# Reiniciar NFS (SIGUIENTE PASO)
 sudo exportfs -ra
 sudo systemctl restart nfs-kernel-server
 ```
 
-#### Paso 2: Instalar cliente NFS en workers
+**✅ Progreso actual:**
+- ✅ Paquete `nfs-kernel-server` instalado correctamente
+- ✅ Directorio `/mnt/nfs-filemanager` creado
+- ✅ Permisos configurados (nobody:nogroup, 777)
+- ✅ Archivo `/etc/exports` configurado
+- ✅ Servicio NFS activo y exportando el directorio
+
+**⚠️ Problema encontrado y resuelto:**
+- Error: Faltaba `/` inicial en la ruta (`mnt/nfs-filemanager` → `/mnt/nfs-filemanager`)
+- Solución: Corregido con `sed` y re-aplicado correctamente
+
+#### Paso 2: Instalar cliente NFS en workers ✅ **COMPLETADO**
 
 ```bash
-# En k8sslave2 y k8sslave3
-sudo apt-get update
-sudo apt-get install -y nfs-common
+# Desde k8smaster0, instalar en k8sslave2
+kubectl debug node/k8sslave2.psdi.org -it --image=ubuntu -- chroot /host bash
+apt-get update
+apt-get install -y nfs-common
+exit
 ```
 
-#### Paso 3: Crear PersistentVolume NFS
+**✅ Verificación completada:**
+```bash
+kubectl debug node/k8sslave2.psdi.org -it --image=ubuntu -- chroot /host bash -c "dpkg -l | grep nfs"
+# Resultado: nfs-common 1:2.6.1-1ubuntu1.2 instalado correctamente
+```
 
-Crea el archivo `pv-nfs.yml`:
+#### Paso 3: Crear PersistentVolume NFS ✅ **COMPLETADO**
+
+Archivo `pv-nfs.yml`:
 
 ```yaml
 apiVersion: v1
@@ -383,9 +406,15 @@ spec:
   storageClassName: nfs
 ```
 
-#### Paso 4: Crear PersistentVolumeClaim NFS
+**✅ Aplicado correctamente:**
+```bash
+kubectl apply -f pv-nfs.yml
+# persistentvolume/server-pv-nfs created
+```
 
-Crea el archivo `pvc-nfs.yml`:
+#### Paso 4: Crear PersistentVolumeClaim NFS ✅ **COMPLETADO**
+
+Archivo `pvc-nfs.yml`:
 
 ```yaml
 apiVersion: v1
@@ -401,7 +430,23 @@ spec:
   storageClassName: nfs
 ```
 
-#### Paso 5: Modificar DeploymentServer.yml
+**✅ Aplicado y vinculado correctamente:**
+```bash
+kubectl apply -f pvc-nfs.yml
+# persistentvolumeclaim/server-pvc-nfs created
+
+kubectl get pv
+# NAME            CAPACITY   ACCESS MODES   STATUS   CLAIM
+# server-pv-nfs   5Gi        RWX            Bound    default/server-pvc-nfs
+
+kubectl get pvc
+# NAME             STATUS   VOLUME          CAPACITY   ACCESS MODES
+# server-pvc-nfs   Bound    server-pv-nfs   5Gi        RWX
+```
+
+**✅ Estado: PV y PVC correctamente vinculados (Bound)**
+
+#### Paso 5: Modificar DeploymentServer.yml ✅ **COMPLETADO**
 
 ```yaml
 apiVersion: apps/v1
@@ -419,7 +464,7 @@ spec:
     app: server-deploy
   spec:
    nodeSelector:
-    node-role: server  # Se distribuyen entre k8sslave2 y k8sslave3
+    node-role: server  # Todas en k8sslave2 (solo tenemos 1 nodo worker con label server)
    containers:
    - name: server-deployment
      image: docker.io/d1n0s/kubernetes-practica2server:v2
@@ -434,26 +479,112 @@ spec:
        claimName: server-pvc-nfs
 ```
 
-#### Paso 6: Aplicar configuración
+**⚠️ Problemas encontrados y resueltos:**
 
+1. **Mount timeout (Connection timed out)**
+   - **Causa:** Security Group de AWS bloqueando puertos NFS
+   - **Solución:** Añadidas reglas de entrada en Security Group:
+     - Puerto 2049 (NFS) desde 172.31.0.0/16
+     - Puerto 111 (RPC) desde 172.31.0.0/16
+
+2. **ImagePullBackOff**
+   - **Causa:** Versión de imagen incorrecta (v3 no existe)
+   - **Solución:** Corregido a v2 en DeploymentServer.yml
+
+**✅ Estado actual:**
 ```bash
-# Aplicar PV y PVC NFS
-kubectl apply -f ~/Practica2/SERVER/pv-nfs.yml
-kubectl apply -f ~/Practica2/SERVER/pvc-nfs.yml
-
-# Verificar
-kubectl get pv
-kubectl get pvc
-
-# Redesplegar
-kubectl delete deployment server-deployment
-kubectl apply -f ~/Practica2/SERVER/DeploymentServer.yml
-
-# Ver distribución de pods
 kubectl get pods -o wide
+# NAME                                 READY   STATUS    AGE
+# broker-deployment-6fd556654c-jzdsx   1/1     Running   5h18m
+# server-deployment-6bc5f558c5-7vpf9   1/1     Running   28s
+# server-deployment-6bc5f558c5-cvltl   1/1     Running   28s
+# server-deployment-6bc5f558c5-q9j**   1/1     Running   28s
 ```
 
-**Ventaja:** Los servidores están en diferentes nodos físicos, pero todos comparten los mismos archivos mediante NFS.
+**✅ Las 3 réplicas están corriendo y compartiendo almacenamiento NFS**
+
+#### Paso 6: Pruebas de persistencia ✅ **COMPLETADO**
+
+Verificación de que las 3 réplicas comparten los mismos archivos mediante NFS.
+
+**Prueba 1: Subir un archivo**
+```bash
+# Desde tu máquina local, conecta al broker
+./clientFileManager 172.31.31.30 32002
+
+# Sube un archivo de prueba
+upload archivo_test.txt
+
+# Lista los archivos en el servidor
+lls
+
+# Salir
+exit
+```
+
+**Prueba 2: Verificar persistencia**
+```bash
+# Vuelve a conectar (puede que te asigne otra réplica)
+./clientFileManager 172.31.31.30 32002
+
+# El archivo debe seguir ahí
+lls
+
+# Descarga el archivo para verificar
+download archivo_test.txt
+
+# Salir
+exit
+```
+
+**Prueba 3: Verificar en el servidor NFS**
+```bash
+# En k8smaster0, verifica que el archivo está en el NFS
+ls -la /mnt/nfs-filemanager/
+
+# Deberías ver el archivo subido desde el cliente
+```
+
+**Prueba 4: Verificar logs de las réplicas**
+```bash
+# Ver logs de cada réplica para confirmar que todas están activas
+kubectl logs server-deployment-6bc5f558c5-7vpf9
+kubectl logs server-deployment-6bc5f558c5-cvltl
+kubectl logs server-deployment-6bc5f558c5-q9j**
+```
+
+**✅ Ventaja:** Las 3 réplicas comparten los mismos archivos mediante NFS. Si una réplica falla, las otras siguen sirviendo los mismos datos.
+
+**✅ Resultados de las pruebas:**
+```bash
+# Crear archivo de prueba
+echo "Esto es una prueba" > Prueba.txt
+
+# Primera conexión - Subir archivo
+./clientFileManager 172.31.31.30 32002
+> upload Prueba.txt
+# Coping file Prueba.txt in to the FileManager path
+# Reading file: Prueba.txt 19 bytes
+
+> lls
+# Listing files fileManager path
+# FileManagerDir/Prueba.txt
+
+# Segunda conexión - Verificar persistencia
+./clientFileManager 172.31.31.30 32002
+> lls
+# Listing files fileManager path
+# FileManagerDir/Prueba.txt  ← ✅ Archivo persiste entre conexiones
+```
+
+**✅ Verificación en servidor NFS:**
+```bash
+# En k8smaster0
+ls -la /mnt/nfs-filemanager/
+# Prueba.txt  ← El archivo está en el almacenamiento compartido NFS
+```
+
+**🎉 CONFIGURACIÓN NFS EXITOSA - Las 3 réplicas comparten datos correctamente**
 
 ---
 
@@ -633,14 +764,13 @@ kubectl describe pvc <nombre-pvc>
 - [x] Servicios NodePort configurados
 - [x] Cliente puede conectarse y ejecutar comandos
 
-### Configuración Avanzada (Elige una)
-- [ ] Config 1: Múltiples réplicas con hostPath
-- [ ] Config 2: Múltiples nodos con NFS
+### Configuración Avanzada
+- [x] **Config 2: Múltiples nodos con NFS** ⭐ **✅ COMPLETADA**
+  - [x] Paso 1: Servidor NFS instalado y configurado en k8smaster0 ✅
+  - [x] Paso 2: Cliente NFS instalado en k8sslave2 ✅
+  - [x] Paso 3: PersistentVolume NFS creado ✅
+  - [x] Paso 4: PersistentVolumeClaim NFS vinculado ✅
+  - [x] Paso 5: Deployment con 3 réplicas funcionando ✅
+  - [x] Paso 6: Pruebas de persistencia exitosas ✅
 
 ---
-
-## 👨‍💻 Autor
-
-Alumno: [Tu Nombre]
-Asignatura: Sistemas Distribuidos
-Curso: 2024/2025

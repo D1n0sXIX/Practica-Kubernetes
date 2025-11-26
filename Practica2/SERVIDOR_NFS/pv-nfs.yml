@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: server-pv-nfs  # Nombre del PersistentVolume
+spec:
+  capacity:
+    storage: 5Gi  # Capacidad total del volumen
+  accessModes:
+    - ReadWriteMany  # Permite lectura/escritura desde múltiples pods simultáneamente
+  nfs:
+    server: 172.31.64.84  # IP del servidor NFS (k8smaster0)
+    path: /mnt/nfs-filemanager  # Ruta del directorio compartido en el servidor NFS
+  storageClassName: nfs  # Clase de almacenamiento personalizada para NFS

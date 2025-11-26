@@ -4,7 +4,7 @@ metadata:
  name: server-deployment # Nombre del despliegue
  namespace: default
 spec:
- replicas: 1
+ replicas: 3 # ← CAMBIADO: 3 réplicas para alta disponibilidad
  selector:
   matchLabels:
    app: server-deploy # Etiqueta para el despliegue
@@ -20,3 +20,10 @@ spec:
      image: docker.io/d1n0s/kubernetes-practica2server:v2 # Imagen del contenedor
      ports:
      - containerPort: 32001 # Puerto del contenedor
+     volumeMounts: # AÑADIDO para el EXTRA: Montar volumen NFS
+     - name: filemanager-storage-nfs
+       mountPath: /FileManagerDir # Directorio donde se guardan los archivos
+   volumes: # AÑADIDO para el EXTRA: Definir volumen NFS
+   - name: filemanager-storage-nfs
+     persistentVolumeClaim:
+       claimName: server-pvc-nfs # Nombre del PVC creado anteriormente

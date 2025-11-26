@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: server-pvc-nfs  # Nombre del claim que usarán los pods
+spec:
+  accessModes:
+    - ReadWriteMany  # Debe coincidir con el PV (múltiples pods leyendo/escribiendo)
+  resources:
+    requests:
+      storage: 5Gi  # Cantidad de almacenamiento solicitado (debe coincidir con el PV)
+  storageClassName: nfs  # Debe coincidir con el PV para vincularse automáticamente
