@@ -107,27 +107,7 @@ Esta documentación cubre dos niveles de implementación:
 
 ## 📘 Parte 1: Configuración Básica del Cluster
 
-### 1.1 Inicialización del Cluster Kubernetes
-
-**En k8smaster0 (nodo master):**
-
-```bash
-# Inicializar el cluster
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-
-# Configurar kubectl para el usuario
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Instalar Calico CNI
-kubectl apply -f https://docs.projectcalico.org/v3.26/manifests/calico.yaml
-
-# Verificar que los pods del sistema estén corriendo
-kubectl get pods -n kube-system
-```
-
-### 1.2 Añadir Nodos Worker al Cluster
+### 1.1 Añadir Nodos Worker al Cluster
 
 **Generar token de join en k8smaster0:**
 
@@ -152,7 +132,7 @@ k8sslave1.psdi.org    Ready    worker          v1.28.15
 k8sslave2.psdi.org    Ready    worker          v1.28.15
 ```
 
-### 1.3 Etiquetar los Nodos
+### 1.2 Etiquetar los Nodos
 
 Las etiquetas permiten usar `nodeSelector` para controlar dónde se ejecutan los pods:
 
